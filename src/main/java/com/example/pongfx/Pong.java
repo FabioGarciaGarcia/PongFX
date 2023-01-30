@@ -3,12 +3,15 @@ package com.example.pongfx;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -51,9 +54,27 @@ public class Pong extends Application {
         Timeline tl = new Timeline(new KeyFrame(Duration.millis(10), e -> run(gc)));
         tl.setCycleCount(Timeline.INDEFINITE);
 
-        //mouse control
-        canvas.setOnMouseMoved(e -> rectIzqYPos = e.getY());
+        canvas.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+                switch (e.getCode()) {
+                    case W:
+                        rectIzqYPos -= 20;
+                        break;
+                    case S:
+                        rectIzqYPos += 20;
+                        break;
+                    case UP:
+                        rectDerYPos -= 20;
+                        break;
+                    case DOWN:
+                        rectDerYPos += 20;
+                        break;
+            }
+        });
+
+
         canvas.setOnMouseClicked(e -> gameStart = true);
+        canvas.setFocusTraversable(true);
+        canvas.requestFocus();
         stage.setScene(new Scene(new StackPane(canvas)));
         stage.show();
         tl.play();
@@ -71,19 +92,13 @@ public class Pong extends Application {
             ballXPos += ballXSpeed;
             ballYPos += ballYSpeed;
 
-            if (ballXPos < (width - width/4)) {
-                rectDerYPos = ballYPos - (rectHeight / 2);
-            } else {
-                rectDerYPos = ballYPos > (rectDerYPos + rectHeight / 2) ? rectDerYPos += 1 : rectDerYPos - 1;
-            }
-
             gc.fillOval(ballXPos, ballYPos, ballR, ballR);
 
         } else {
             //Este es el texto que le aparecerá al principio para comenzar la partida, deberá hacer click para empezar a jugar
             gc.setStroke(Color.WHITE);
             gc.setTextAlign(TextAlignment.CENTER);
-            gc.strokeText("COMENZAR PARTIDA", width/2, height/2);
+            gc.strokeText("COMENZAR PARTIDA\nDALE CLICK", width/2, height/2);
 
             //Volvemos a poner la bola en el centro de la pantalla
             ballXPos = width / 2;
@@ -115,17 +130,35 @@ public class Pong extends Application {
             gameStart = false;
         }
 
-        //Incrementamos la velocidad de la bola cada vez que reciba un impacto de un rectángulo
-        /*
-        *
-        *   PONER CÓDIGO NECESARIO PARA HACERLO
-        *
-        * */
+        //Hacemos que la bola detecte el impacto con los rectángulos e incrementamos la velocidad de la bola cada vez que reciba un impacto de un rectángulo
+        if (((ballXPos + ballR > rectDerXPos) && ballYPos >= rectDerYPos && ballYPos <= rectDerYPos + rectHeight) ||
+                ((ballXPos < rectIzqXPos + rectWidth) && ballYPos >= rectIzqYPos && ballYPos <= rectIzqYPos + rectHeight)) {
+            ballYSpeed += 1 * Math.signum(ballYSpeed);
+            ballXSpeed += 1 * Math.signum(ballXSpeed);
+            ballXSpeed *= -1;
+            ballYSpeed *= -1;
+        }
+
+        //Hacemos que no se desborden los rectángulos
+        if (rectIzqYPos <= 0) {
+            rectIzqYPos = 0;
+        } else if (rectIzqYPos >= height - rectHeight) {
+            rectIzqYPos = height - rectHeight;
+        }
+        if (rectDerYPos <= 0) {
+            rectDerYPos = 0;
+        } else if (rectDerYPos >= height - rectHeight) {
+            rectDerYPos = height - rectHeight;
+        }
+
 
         //Mostramos en pantalla los puntos de ambos jugadores
-        gc.fillText(String.valueOf(scoreRectIzq), width - ((3/4)*width), height - (height*0.2));
-        gc.fillText(String.valueOf(scoreRectDer), width - (width/4), height - (height*0.2));
+        gc.fillText(String.valueOf(scoreRectIzq), width*0.25, height*0.2);
+        gc.fillText(String.valueOf(scoreRectDer), width*0.75, height*0.2);
 
+        //Pintamos los rectángulos
+        gc.fillRect(rectIzqXPos, rectIzqYPos, rectWidth, rectHeight);
+        gc.fillRect(rectDerXPos, rectDerYPos, rectWidth, rectHeight);
 
     }
 
